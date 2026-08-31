@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 function Home() {
@@ -13,6 +14,14 @@ function Home() {
         <p className="text-sm text-gray-500 mb-6">
           Roles: {user?.roles?.join(', ')}
         </p>
+
+        <Link
+          to="/provider-profile"
+          className="block w-full bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700 mb-3"
+        >
+          Manage Provider Profile
+        </Link>
+
         <button
           onClick={logout}
           className="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700"
