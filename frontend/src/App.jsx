@@ -1,36 +1,42 @@
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Home from './pages/Home';
 
-function App() {
-  const [health, setHealth] = useState(null)
-  const [error, setError] = useState(null)
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    axios.get('http://localhost:8080/api/health')
-      .then(res => setHealth(res.data))
-      .catch(err => setError(err.message))
-  }, [])
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md text-center">
-        <h1 className="text-3xl font-bold text-blue-600 mb-4">
-          Neighborhood Services
-        </h1>
-        <p className="text-gray-600 mb-2">Frontend ↔ Backend connection test</p>
-        {health && (
-          <p className="text-green-600 font-semibold">
-            Backend status: {health.status} (checked at {health.timestamp})
-          </p>
-        )}
-        {error && (
-          <p className="text-red-600 font-semibold">
-            Error reaching backend: {error}
-          </p>
-        )}
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <p className="text-gray-500">Loading...</p>
       </div>
-    </div>
-  )
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 }
 
-export default App
+function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
+}
+
+export default App;

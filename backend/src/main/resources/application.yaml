@@ -23,3 +23,7 @@ spring:
 app:
   cors:
     allowed-origins: http://localhost:5173
+
+  jwt:
+    secret: "Y29tLm5laWdoYm9yaG9vZC5zZXJ2aWNlcy5qd3Quc2VjcmV0LmtleS5mb3IuZGV2ZWxvcG1lbnQ="
+    expiration-ms: 86400000
