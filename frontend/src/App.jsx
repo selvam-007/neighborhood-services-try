@@ -8,6 +8,7 @@ import Browse from './pages/Browse';
 import ProviderDetail from './pages/ProviderDetail';
 import MyBookings from './pages/MyBookings';
 import AdminDashboard from './pages/AdminDashboard';
+import BookingChat from './pages/BookingChat';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -77,6 +78,14 @@ function App() {
         element={
           <ProtectedRoute>
             <MyBookings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/bookings/:bookingId/chat"
+        element={
+          <ProtectedRoute>
+            <BookingChat />
           </ProtectedRoute>
         }
       />

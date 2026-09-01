@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const STATUS_COLORS = {
@@ -42,6 +43,12 @@ function BookingCard({ booking, isProvider, onAction }) {
       )}
 
       <div className="flex gap-2 flex-wrap">
+        <Link
+          to={`/bookings/${booking.id}/chat`}
+          className="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
+        >
+          💬 Chat
+        </Link>
         {isProvider && booking.status === 'REQUESTED' && (
           <>
             <button
