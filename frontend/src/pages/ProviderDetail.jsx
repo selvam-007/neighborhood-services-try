@@ -2,19 +2,55 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 function ProviderDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [provider, setProvider] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const [serviceType, setServiceType] = useState('');
+  const [notes, setNotes] = useState('');
+  const [requestedDate, setRequestedDate] = useState('');
+  const [bookingMessage, setBookingMessage] = useState('');
+  const [bookingError, setBookingError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     api.get(`/providers/${id}`)
-      .then((res) => setProvider(res.data))
+      .then((res) => {
+        setProvider(res.data);
+        if (res.data.servicesOffered?.length > 0) {
+          setServiceType(res.data.servicesOffered[0]);
+        }
+      })
       .catch(() => setError('Provider not found'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleBooking = async (e) => {
+    e.preventDefault();
+    setBookingError('');
+    setBookingMessage('');
+    setSubmitting(true);
+    try {
+      await api.post('/bookings', {
+        providerId: provider.id,
+        serviceType,
+        notes,
+        requestedDate: requestedDate || null,
+      });
+      setBookingMessage('Booking request sent! Check "My Bookings" to track it.');
+      setNotes('');
+      setRequestedDate('');
+    } catch (err) {
+      setBookingError(err.response?.data?.error || 'Failed to send booking request');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -34,6 +70,8 @@ function ProviderDetail() {
       </div>
     );
   }
+
+  const isOwnProfile = user && user.userId === provider.userId;
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
@@ -84,7 +122,7 @@ function ProviderDetail() {
         )}
 
         {provider.latitude && provider.longitude && (
-          <div className="h-48 rounded overflow-hidden border border-gray-300 mb-4">
+          <div className="h-48 rounded overflow-hidden border border-gray-300 mb-6">
             <MapContainer
               center={[provider.latitude, provider.longitude]}
               zoom={14}
@@ -101,12 +139,63 @@ function ProviderDetail() {
           </div>
         )}
 
-        <button
-          disabled
-          className="w-full bg-gray-300 text-gray-500 py-2 rounded font-semibold cursor-not-allowed"
-        >
-          Book This Provider (coming in Phase 5)
-        </button>
+        <hr className="mb-6" />
+
+        {!user && (
+          <p className="text-center text-gray-500">
+            <Link to="/login" className="text-blue-600 font-semibold">Log in</Link> to book this provider.
+          </p>
+        )}
+
+        {user && isOwnProfile && (
+          <p className="text-center text-gray-500">This is your own provider profile.</p>
+        )}
+
+        {user && !isOwnProfile && (
+          <form onSubmit={handleBooking}>
+            <h2 className="font-semibold text-gray-700 mb-3">Request a Booking</h2>
+
+            {bookingMessage && <p className="text-green-600 bg-green-50 p-2 rounded mb-3 text-sm">{bookingMessage}</p>}
+            {bookingError && <p className="text-red-600 bg-red-50 p-2 rounded mb-3 text-sm">{bookingError}</p>}
+
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Service</label>
+            <select
+              value={serviceType}
+              onChange={(e) => setServiceType(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-3"
+              required
+            >
+              {provider.servicesOffered.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Preferred Date (optional)</label>
+            <input
+              type="date"
+              value={requestedDate}
+              onChange={(e) => setRequestedDate(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-3"
+            />
+
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Describe what you need..."
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
+            />
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 disabled:opacity-50"
+            >
+              {submitting ? 'Sending...' : 'Send Booking Request'}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

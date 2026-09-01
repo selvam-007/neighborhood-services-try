@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import ProviderProfile from './pages/ProviderProfile';
 import Browse from './pages/Browse';
 import ProviderDetail from './pages/ProviderDetail';
+import MyBookings from './pages/MyBookings';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -45,6 +46,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ProviderProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-bookings"
+        element={
+          <ProtectedRoute>
+            <MyBookings />
           </ProtectedRoute>
         }
       />

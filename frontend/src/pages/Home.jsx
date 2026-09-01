@@ -23,6 +23,13 @@ function Home() {
         </Link>
 
         <Link
+          to="/my-bookings"
+          className="block w-full bg-purple-600 text-white py-2 rounded font-semibold hover:bg-purple-700 mb-3"
+        >
+          My Bookings
+        </Link>
+
+        <Link
           to="/provider-profile"
           className="block w-full bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700 mb-3"
         >
