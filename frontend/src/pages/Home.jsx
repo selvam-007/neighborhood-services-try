@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 
 function Home() {
   const { user, logout } = useAuth();
+  const isAdmin = user?.roles?.includes('ROLE_ADMIN');
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -35,6 +36,15 @@ function Home() {
         >
           Manage Provider Profile
         </Link>
+
+        {isAdmin && (
+          <Link
+            to="/admin"
+            className="block w-full bg-orange-600 text-white py-2 rounded font-semibold hover:bg-orange-700 mb-3"
+          >
+            Admin Dashboard
+          </Link>
+        )}
 
         <button
           onClick={logout}

@@ -7,6 +7,7 @@ import ProviderProfile from './pages/ProviderProfile';
 import Browse from './pages/Browse';
 import ProviderDetail from './pages/ProviderDetail';
 import MyBookings from './pages/MyBookings';
+import AdminDashboard from './pages/AdminDashboard';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -21,6 +22,28 @@ function ProtectedRoute({ children }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!user.roles?.includes('ROLE_ADMIN')) {
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -55,6 +78,14 @@ function App() {
           <ProtectedRoute>
             <MyBookings />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
         }
       />
     </Routes>
