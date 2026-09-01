@@ -16,6 +16,13 @@ function Home() {
         </p>
 
         <Link
+          to="/browse"
+          className="block w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 mb-3"
+        >
+          Browse Providers
+        </Link>
+
+        <Link
           to="/provider-profile"
           className="block w-full bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700 mb-3"
         >
