@@ -3,6 +3,7 @@ import api from '../api/axios';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+
 const STATUS_COLORS = {
   REQUESTED: 'bg-yellow-100 text-yellow-800',
   ACCEPTED: 'bg-blue-100 text-blue-800',
@@ -14,11 +15,36 @@ const STATUS_COLORS = {
 
 function BookingCard({ booking, isProvider, onAction }) {
   const [actionLoading, setActionLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+
+  useEffect(() => {
+  if (!isProvider && booking.status === 'COMPLETED') {
+    api.get(`/reviews/booking/${booking.id}/exists`)
+      .then((res) => setReviewSubmitted(res.data.reviewed))
+      .catch(() => {});
+  }
+}, [booking.id, booking.status, isProvider]);
 
   const doAction = async (status) => {
     setActionLoading(true);
     await onAction(booking.id, status);
     setActionLoading(false);
+  };
+
+  const submitReview = async (e) => {
+    e.preventDefault();
+    setReviewError('');
+    try {
+      await api.post('/reviews', { bookingId: booking.id, rating, comment });
+      setReviewSubmitted(true);
+      setShowReviewForm(false);
+    } catch (err) {
+      setReviewError(err.response?.data?.error || 'Failed to submit review');
+    }
   };
 
   return (
@@ -49,6 +75,7 @@ function BookingCard({ booking, isProvider, onAction }) {
         >
           💬 Chat
         </Link>
+
         {isProvider && booking.status === 'REQUESTED' && (
           <>
             <button
@@ -107,7 +134,51 @@ function BookingCard({ booking, isProvider, onAction }) {
             Cancel
           </button>
         )}
+
+        {!isProvider && booking.status === 'COMPLETED' && !reviewSubmitted && (
+          <button
+            onClick={() => setShowReviewForm(!showReviewForm)}
+            className="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+          >
+            ⭐ Leave a Review
+          </button>
+        )}
+
+        {reviewSubmitted && (
+          <span className="text-xs text-green-600 font-medium">✓ Review submitted</span>
+        )}
       </div>
+
+      {showReviewForm && (
+        <form onSubmit={submitReview} className="mt-3 pt-3 border-t">
+          {reviewError && <p className="text-red-600 text-xs mb-2">{reviewError}</p>}
+          <div className="flex items-center gap-1 mb-2">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRating(n)}
+                className={`text-xl ${n <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={2}
+            placeholder="How was the service?"
+            className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-2"
+          />
+          <button
+            type="submit"
+            className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+          >
+            Submit Review
+          </button>
+        </form>
+      )}
     </div>
   );
 }
