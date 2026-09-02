@@ -1,33 +1,48 @@
-import { useState, useEffect } from 'react';
-import api from '../api/axios';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-
+import { useState, useEffect } from "react";
+import api from "../api/axios";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const STATUS_COLORS = {
-  REQUESTED: 'bg-yellow-100 text-yellow-800',
-  ACCEPTED: 'bg-blue-100 text-blue-800',
-  REJECTED: 'bg-red-100 text-red-800',
-  IN_PROGRESS: 'bg-purple-100 text-purple-800',
-  COMPLETED: 'bg-green-100 text-green-800',
-  CANCELLED: 'bg-gray-100 text-gray-600',
+  REQUESTED: "bg-yellow-100 text-yellow-800",
+  ACCEPTED: "bg-blue-100 text-blue-800",
+  REJECTED: "bg-red-100 text-red-800",
+  IN_PROGRESS: "bg-purple-100 text-purple-800",
+  COMPLETED: "bg-green-100 text-green-800",
+  CANCELLED: "bg-gray-100 text-gray-600",
 };
 
 function BookingCard({ booking, isProvider, onAction }) {
   const [actionLoading, setActionLoading] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
-  const [reviewError, setReviewError] = useState('');
+  const [reviewError, setReviewError] = useState("");
+  const [payment, setPayment] = useState(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState("UPI");
+  const [transactionReference, setTransactionReference] = useState("");
+  const [paymentError, setPaymentError] = useState("");
 
   useEffect(() => {
-  if (!isProvider && booking.status === 'COMPLETED') {
-    api.get(`/reviews/booking/${booking.id}/exists`)
-      .then((res) => setReviewSubmitted(res.data.reviewed))
-      .catch(() => {});
-  }
-}, [booking.id, booking.status, isProvider]);
+    if (!isProvider && booking.status === "COMPLETED") {
+      api
+        .get(`/reviews/booking/${booking.id}/exists`)
+        .then((res) => setReviewSubmitted(res.data.reviewed))
+        .catch(() => {});
+    }
+  }, [booking.id, booking.status, isProvider]);
+
+  useEffect(() => {
+    if (booking.status === "COMPLETED") {
+      api
+        .get(`/payments/booking/${booking.id}`)
+        .then((res) => setPayment(res.data))
+        .catch(() => setPayment(null));
+    }
+  }, [booking.id, booking.status]);
 
   const doAction = async (status) => {
     setActionLoading(true);
@@ -37,13 +52,39 @@ function BookingCard({ booking, isProvider, onAction }) {
 
   const submitReview = async (e) => {
     e.preventDefault();
-    setReviewError('');
+    setReviewError("");
     try {
-      await api.post('/reviews', { bookingId: booking.id, rating, comment });
+      await api.post("/reviews", { bookingId: booking.id, rating, comment });
       setReviewSubmitted(true);
       setShowReviewForm(false);
     } catch (err) {
-      setReviewError(err.response?.data?.error || 'Failed to submit review');
+      setReviewError(err.response?.data?.error || "Failed to submit review");
+    }
+  };
+
+  const submitPayment = async (e) => {
+    e.preventDefault();
+    setPaymentError("");
+    try {
+      const res = await api.post("/payments", {
+        bookingId: booking.id,
+        amount: parseFloat(amount),
+        method,
+        transactionReference,
+      });
+      setPayment(res.data);
+      setShowPaymentForm(false);
+    } catch (err) {
+      setPaymentError(err.response?.data?.error || "Failed to record payment");
+    }
+  };
+
+  const confirmPayment = async () => {
+    try {
+      const res = await api.patch(`/payments/booking/${booking.id}/confirm`);
+      setPayment(res.data);
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to confirm payment");
     }
   };
 
@@ -52,11 +93,15 @@ function BookingCard({ booking, isProvider, onAction }) {
       <div className="flex justify-between items-start mb-2">
         <div>
           <p className="font-semibold text-gray-800">
-            {isProvider ? `From: ${booking.requesterName}` : `Provider: ${booking.providerName}`}
+            {isProvider
+              ? `From: ${booking.requesterName}`
+              : `Provider: ${booking.providerName}`}
           </p>
           <p className="text-sm text-gray-500">{booking.serviceType}</p>
         </div>
-        <span className={`text-xs px-2 py-1 rounded font-medium ${STATUS_COLORS[booking.status]}`}>
+        <span
+          className={`text-xs px-2 py-1 rounded font-medium ${STATUS_COLORS[booking.status]}`}
+        >
           {booking.status}
         </span>
       </div>
@@ -76,17 +121,17 @@ function BookingCard({ booking, isProvider, onAction }) {
           💬 Chat
         </Link>
 
-        {isProvider && booking.status === 'REQUESTED' && (
+        {isProvider && booking.status === "REQUESTED" && (
           <>
             <button
-              onClick={() => doAction('ACCEPTED')}
+              onClick={() => doAction("ACCEPTED")}
               disabled={actionLoading}
               className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:opacity-50"
             >
               Accept
             </button>
             <button
-              onClick={() => doAction('REJECTED')}
+              onClick={() => doAction("REJECTED")}
               disabled={actionLoading}
               className="text-xs bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 disabled:opacity-50"
             >
@@ -95,9 +140,9 @@ function BookingCard({ booking, isProvider, onAction }) {
           </>
         )}
 
-        {isProvider && booking.status === 'ACCEPTED' && (
+        {isProvider && booking.status === "ACCEPTED" && (
           <button
-            onClick={() => doAction('IN_PROGRESS')}
+            onClick={() => doAction("IN_PROGRESS")}
             disabled={actionLoading}
             className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 disabled:opacity-50"
           >
@@ -105,9 +150,9 @@ function BookingCard({ booking, isProvider, onAction }) {
           </button>
         )}
 
-        {isProvider && booking.status === 'IN_PROGRESS' && (
+        {isProvider && booking.status === "IN_PROGRESS" && (
           <button
-            onClick={() => doAction('COMPLETED')}
+            onClick={() => doAction("COMPLETED")}
             disabled={actionLoading}
             className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:opacity-50"
           >
@@ -115,9 +160,9 @@ function BookingCard({ booking, isProvider, onAction }) {
           </button>
         )}
 
-        {!isProvider && booking.status === 'REQUESTED' && (
+        {!isProvider && booking.status === "REQUESTED" && (
           <button
-            onClick={() => doAction('CANCELLED')}
+            onClick={() => doAction("CANCELLED")}
             disabled={actionLoading}
             className="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 disabled:opacity-50"
           >
@@ -125,9 +170,9 @@ function BookingCard({ booking, isProvider, onAction }) {
           </button>
         )}
 
-        {(booking.status === 'ACCEPTED') && (
+        {booking.status === "ACCEPTED" && (
           <button
-            onClick={() => doAction('CANCELLED')}
+            onClick={() => doAction("CANCELLED")}
             disabled={actionLoading}
             className="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 disabled:opacity-50"
           >
@@ -135,7 +180,7 @@ function BookingCard({ booking, isProvider, onAction }) {
           </button>
         )}
 
-        {!isProvider && booking.status === 'COMPLETED' && !reviewSubmitted && (
+        {!isProvider && booking.status === "COMPLETED" && !reviewSubmitted && (
           <button
             onClick={() => setShowReviewForm(!showReviewForm)}
             className="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
@@ -145,20 +190,24 @@ function BookingCard({ booking, isProvider, onAction }) {
         )}
 
         {reviewSubmitted && (
-          <span className="text-xs text-green-600 font-medium">✓ Review submitted</span>
+          <span className="text-xs text-green-600 font-medium">
+            ✓ Review submitted
+          </span>
         )}
       </div>
 
       {showReviewForm && (
         <form onSubmit={submitReview} className="mt-3 pt-3 border-t">
-          {reviewError && <p className="text-red-600 text-xs mb-2">{reviewError}</p>}
+          {reviewError && (
+            <p className="text-red-600 text-xs mb-2">{reviewError}</p>
+          )}
           <div className="flex items-center gap-1 mb-2">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => setRating(n)}
-                className={`text-xl ${n <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                className={`text-xl ${n <= rating ? "text-yellow-400" : "text-gray-300"}`}
               >
                 ★
               </button>
@@ -179,22 +228,102 @@ function BookingCard({ booking, isProvider, onAction }) {
           </button>
         </form>
       )}
+
+      {booking.status === "COMPLETED" && (
+        <div className="mt-3 pt-3 border-t">
+          {!payment && !isProvider && !showPaymentForm && (
+            <button
+              onClick={() => setShowPaymentForm(true)}
+              className="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700"
+            >
+              💰 Record Payment
+            </button>
+          )}
+
+          {!payment && showPaymentForm && (
+            <form onSubmit={submitPayment}>
+              {paymentError && (
+                <p className="text-red-600 text-xs mb-2">{paymentError}</p>
+              )}
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-2"
+                required
+              />
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-2"
+              >
+                <option value="UPI">UPI</option>
+                <option value="CASH">Cash</option>
+                <option value="BANK_TRANSFER">Bank Transfer</option>
+                <option value="OTHER">Other</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Transaction reference (optional)"
+                value={transactionReference}
+                onChange={(e) => setTransactionReference(e.target.value)}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-2"
+              />
+              <button
+                type="submit"
+                className="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700"
+              >
+                Save Payment
+              </button>
+            </form>
+          )}
+
+          {payment && (
+            <div className="text-sm">
+              <p className="text-gray-700">
+                💰 ₹{payment.amount} via {payment.method.replace("_", " ")} —{" "}
+                <span
+                  className={`font-semibold ${
+                    payment.status === "PAID"
+                      ? "text-green-600"
+                      : payment.status === "REFUNDED"
+                        ? "text-gray-500"
+                        : "text-yellow-600"
+                  }`}
+                >
+                  {payment.status}
+                </span>
+              </p>
+              {isProvider && payment.status === "PENDING" && (
+                <button
+                  onClick={confirmPayment}
+                  className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 mt-1"
+                >
+                  Confirm Receipt
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 function MyBookings() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('requester');
+  const [tab, setTab] = useState("requester");
   const [requesterBookings, setRequesterBookings] = useState([]);
   const [providerBookings, setProviderBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const isProviderRole = user?.roles?.includes('ROLE_PROVIDER');
+  const isProviderRole = user?.roles?.includes("ROLE_PROVIDER");
 
   const loadBookings = () => {
     setLoading(true);
-    const requests = [api.get('/bookings/as-requester')];
-    if (isProviderRole) requests.push(api.get('/bookings/as-provider'));
+    const requests = [api.get("/bookings/as-requester")];
+    if (isProviderRole) requests.push(api.get("/bookings/as-provider"));
 
     Promise.all(requests)
       .then(([reqRes, provRes]) => {
@@ -214,11 +343,11 @@ function MyBookings() {
       await api.patch(`/bookings/${bookingId}/status`, { status });
       loadBookings();
     } catch (err) {
-      alert(err.response?.data?.error || 'Action failed');
+      alert(err.response?.data?.error || "Action failed");
     }
   };
 
-  const activeList = tab === 'requester' ? requesterBookings : providerBookings;
+  const activeList = tab === "requester" ? requesterBookings : providerBookings;
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
@@ -228,17 +357,21 @@ function MyBookings() {
         {isProviderRole && (
           <div className="flex gap-2 mb-6">
             <button
-              onClick={() => setTab('requester')}
+              onClick={() => setTab("requester")}
               className={`px-4 py-2 rounded text-sm font-medium ${
-                tab === 'requester' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'
+                tab === "requester"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 border border-gray-300"
               }`}
             >
               As Requester
             </button>
             <button
-              onClick={() => setTab('provider')}
+              onClick={() => setTab("provider")}
               className={`px-4 py-2 rounded text-sm font-medium ${
-                tab === 'provider' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'
+                tab === "provider"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 border border-gray-300"
               }`}
             >
               As Provider
@@ -257,7 +390,7 @@ function MyBookings() {
             <BookingCard
               key={booking.id}
               booking={booking}
-              isProvider={tab === 'provider'}
+              isProvider={tab === "provider"}
               onAction={handleAction}
             />
           ))}

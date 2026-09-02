@@ -49,4 +49,13 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PatchMapping("/payments/booking/{bookingId}/refund")
+    public ResponseEntity<?> refundPayment(@PathVariable Long bookingId) {
+        try {
+            return ResponseEntity.ok(adminService.refundPayment(bookingId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

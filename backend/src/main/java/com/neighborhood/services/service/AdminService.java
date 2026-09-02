@@ -21,15 +21,18 @@ public class AdminService {
     private final UserRepository userRepository;
     private final ProviderProfileRepository providerProfileRepository;
     private final BookingRepository bookingRepository;
+    private final com.neighborhood.services.repository.PaymentRepository paymentRepository;
 
     public AdminService(
             UserRepository userRepository,
             ProviderProfileRepository providerProfileRepository,
-            BookingRepository bookingRepository
+            BookingRepository bookingRepository,
+            com.neighborhood.services.repository.PaymentRepository paymentRepository
     ) {
         this.userRepository = userRepository;
         this.providerProfileRepository = providerProfileRepository;
         this.bookingRepository = bookingRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     public AdminStatsResponse getStats() {
@@ -91,5 +94,13 @@ public class AdminService {
 
         booking.setStatus(resolvedStatus);
         return new BookingResponse(bookingRepository.save(booking));
+    }
+
+    public com.neighborhood.services.dto.PaymentResponse refundPayment(Long bookingId) {
+        com.neighborhood.services.entity.Payment payment = paymentRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("No payment record found for this booking"));
+
+        payment.setStatus(com.neighborhood.services.entity.Payment.Status.REFUNDED);
+        return new com.neighborhood.services.dto.PaymentResponse(paymentRepository.save(payment));
     }
 }
