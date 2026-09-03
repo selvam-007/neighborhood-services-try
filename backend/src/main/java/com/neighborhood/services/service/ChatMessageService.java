@@ -46,6 +46,11 @@ public class ChatMessageService {
 
         verifyParticipant(booking, sender);
 
+        if (booking.getStatus() == Booking.Status.CANCELLED ||
+                booking.getStatus() == Booking.Status.REJECTED) {
+            throw new IllegalArgumentException("Cannot send messages on a cancelled or rejected booking");
+        }
+
         ChatMessage message = new ChatMessage();
         message.setBooking(booking);
         message.setSender(sender);

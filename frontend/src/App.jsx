@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
@@ -15,8 +16,11 @@ function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-gray-500">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-medium text-slate-500">Loading NeighborLink...</p>
+        </div>
       </div>
     );
   }
@@ -33,8 +37,11 @@ function AdminRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-gray-500">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-medium text-slate-500">Verifying access...</p>
+        </div>
       </div>
     );
   }
@@ -55,13 +62,29 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/browse" element={<Browse />} />
-      <Route path="/providers/:id" element={<ProviderDetail />} />
+      <Route
+        path="/browse"
+        element={
+          <Layout>
+            <Browse />
+          </Layout>
+        }
+      />
+      <Route
+        path="/providers/:id"
+        element={
+          <Layout>
+            <ProviderDetail />
+          </Layout>
+        }
+      />
       <Route
         path="/"
         element={
           <ProtectedRoute>
-            <Home />
+            <Layout>
+              <Home />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -69,7 +92,9 @@ function App() {
         path="/provider-profile"
         element={
           <ProtectedRoute>
-            <ProviderProfile />
+            <Layout>
+              <ProviderProfile />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -77,7 +102,9 @@ function App() {
         path="/my-bookings"
         element={
           <ProtectedRoute>
-            <MyBookings />
+            <Layout>
+              <MyBookings />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -85,7 +112,9 @@ function App() {
         path="/bookings/:bookingId/chat"
         element={
           <ProtectedRoute>
-            <BookingChat />
+            <Layout hideFooter={true}>
+              <BookingChat />
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -93,7 +122,9 @@ function App() {
         path="/admin"
         element={
           <AdminRoute>
-            <AdminDashboard />
+            <Layout>
+              <AdminDashboard />
+            </Layout>
           </AdminRoute>
         }
       />

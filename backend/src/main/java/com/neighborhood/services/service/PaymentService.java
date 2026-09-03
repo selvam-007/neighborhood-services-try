@@ -38,6 +38,10 @@ public class PaymentService {
             throw new IllegalArgumentException("Only the requester can record payment for this booking");
         }
 
+        if (booking.getStatus() != Booking.Status.COMPLETED) {
+            throw new IllegalArgumentException("Payment can only be recorded for a completed booking");
+        }
+
         if (paymentRepository.existsByBookingId(booking.getId())) {
             throw new IllegalArgumentException("A payment record already exists for this booking");
         }

@@ -46,6 +46,10 @@ public class ReviewService {
             throw new IllegalArgumentException("Only the requester can review this booking");
         }
 
+        if (request.getRating() < 1 || request.getRating() > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
+        }
+
         if (booking.getStatus() != Booking.Status.COMPLETED) {
             throw new IllegalArgumentException("You can only review a completed booking");
         }

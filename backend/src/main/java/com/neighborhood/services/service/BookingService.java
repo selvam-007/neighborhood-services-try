@@ -19,15 +19,18 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final ProviderProfileRepository providerProfileRepository;
+    private final NotificationService notificationService;
 
     public BookingService(
             BookingRepository bookingRepository,
             UserRepository userRepository,
-            ProviderProfileRepository providerProfileRepository
+            ProviderProfileRepository providerProfileRepository,
+            NotificationService notificationService
     ) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.providerProfileRepository = providerProfileRepository;
+        this.notificationService = notificationService;
     }
 
     public BookingResponse createBooking(String requesterEmail, BookingRequest request) {
@@ -49,7 +52,18 @@ public class BookingService {
         booking.setRequestedDate(request.getRequestedDate());
         booking.setStatus(Booking.Status.REQUESTED);
 
-        return new BookingResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        notificationService.sendEmail(
+                provider.getUser().getEmail(),
+                "New Booking Request - Neighborhood Services",
+                "Hi " + provider.getUser().getFullName() + ",\n\n" +
+                        requester.getFullName() + " has requested your " + request.getServiceType() + " service.\n" +
+                        "Notes: " + (request.getNotes() != null ? request.getNotes() : "None") + "\n\n" +
+                        "Log in to accept or reject this request."
+        );
+
+        return new BookingResponse(saved);
     }
 
     public BookingResponse updateStatus(String userEmail, Long bookingId, Booking.Status newStatus) {
@@ -69,7 +83,44 @@ public class BookingService {
         validateTransition(booking.getStatus(), newStatus, isProvider, isRequester);
 
         booking.setStatus(newStatus);
-        return new BookingResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        notifyStatusChange(saved, newStatus);
+
+        return new BookingResponse(saved);
+    }
+
+    private void notifyStatusChange(Booking booking, Booking.Status newStatus) {
+        String requesterEmail = booking.getRequester().getEmail();
+        String requesterName = booking.getRequester().getFullName();
+        String providerName = booking.getProvider().getUser().getFullName();
+
+        String subject;
+        String body;
+
+        switch (newStatus) {
+            case ACCEPTED -> {
+                subject = "Booking Accepted - Neighborhood Services";
+                body = "Hi " + requesterName + ",\n\n" + providerName + " has accepted your booking request for "
+                        + booking.getServiceType() + ".";
+            }
+            case REJECTED -> {
+                subject = "Booking Declined - Neighborhood Services";
+                body = "Hi " + requesterName + ",\n\n" + providerName + " was unable to accept your booking request for "
+                        + booking.getServiceType() + ".";
+            }
+            case COMPLETED -> {
+                subject = "Service Completed - Neighborhood Services";
+                body = "Hi " + requesterName + ",\n\nYour " + booking.getServiceType()
+                        + " service with " + providerName + " has been marked as completed. "
+                        + "Log in to leave a review!";
+            }
+            default -> {
+                return;
+            }
+        }
+
+        notificationService.sendEmail(requesterEmail, subject, body);
     }
 
     private void validateTransition(Booking.Status current, Booking.Status next, boolean isProvider, boolean isRequester) {
