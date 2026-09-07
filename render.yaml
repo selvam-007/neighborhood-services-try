@@ -7,4 +7,4 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: ALLOWED_ORIGINS
-        value: "https://*.netlify.app,http://localhost:5173"
+        value: "https://*.vercel.app,https://frontend-dusky-nu-59.vercel.app,http://localhost:5173"
