@@ -30,7 +30,13 @@ function Login() {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Invalid email or password. Please try again.');
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (!err.response
+          ? 'Cannot connect to backend server. Make sure the backend (Spring Boot on port 8080) is running and reachable.'
+          : 'Invalid email or password. Please try again.');
+      setError(msg);
     } finally {
       setLoading(false);
     }

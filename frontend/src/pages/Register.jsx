@@ -34,7 +34,13 @@ function Register() {
       await register(email, password, fullName, phoneNumber);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration could not be completed. Please try again.');
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (!err.response
+          ? 'Cannot connect to backend server. Make sure the backend (Spring Boot on port 8080) is running and reachable.'
+          : 'Registration could not be completed. Please check your details and try again.');
+      setError(msg);
     } finally {
       setLoading(false);
     }
