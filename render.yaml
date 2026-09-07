@@ -8,3 +8,5 @@ services:
     envVars:
       - key: ALLOWED_ORIGINS
         value: "https://*.vercel.app,https://frontend-dusky-nu-59.vercel.app,http://localhost:5173"
+      - key: JAVA_TOOL_OPTIONS
+        value: "-Xmx350m -Xms200m -XX:+UseSerialGC"
