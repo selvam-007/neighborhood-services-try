@@ -9,10 +9,11 @@ import java.util.Map;
 @RestController
 public class HealthController {
 
-    @GetMapping("/api/health")
+    @GetMapping({"/", "/api/health"})
     public Map<String, Object> health() {
         return Map.of(
                 "status", "UP",
+                "message", "Neighborhood Services API is running",
                 "timestamp", Instant.now().toString()
         );
     }
