@@ -3,10 +3,14 @@ package com.neighborhood.services.service;
 import com.neighborhood.services.dto.AdminStatsResponse;
 import com.neighborhood.services.dto.AdminUserResponse;
 import com.neighborhood.services.dto.BookingResponse;
+import com.neighborhood.services.dto.PaymentResponse;
 import com.neighborhood.services.dto.ProviderProfileResponse;
 import com.neighborhood.services.entity.Booking;
+import com.neighborhood.services.entity.Payment;
 import com.neighborhood.services.entity.ProviderProfile;
+import com.neighborhood.services.exception.ResourceNotFoundException;
 import com.neighborhood.services.repository.BookingRepository;
+import com.neighborhood.services.repository.PaymentRepository;
 import com.neighborhood.services.repository.ProviderProfileRepository;
 import com.neighborhood.services.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -21,13 +25,13 @@ public class AdminService {
     private final UserRepository userRepository;
     private final ProviderProfileRepository providerProfileRepository;
     private final BookingRepository bookingRepository;
-    private final com.neighborhood.services.repository.PaymentRepository paymentRepository;
+    private final PaymentRepository paymentRepository;
 
     public AdminService(
             UserRepository userRepository,
             ProviderProfileRepository providerProfileRepository,
             BookingRepository bookingRepository,
-            com.neighborhood.services.repository.PaymentRepository paymentRepository
+            PaymentRepository paymentRepository
     ) {
         this.userRepository = userRepository;
         this.providerProfileRepository = providerProfileRepository;
@@ -82,7 +86,7 @@ public class AdminService {
 
     public ProviderProfileResponse verifyProvider(Long providerId, boolean verified) {
         ProviderProfile profile = providerProfileRepository.findById(providerId)
-                .orElseThrow(() -> new IllegalArgumentException("Provider not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
 
         profile.setVerified(verified);
         return new ProviderProfileResponse(providerProfileRepository.save(profile));
@@ -90,17 +94,17 @@ public class AdminService {
 
     public BookingResponse resolveBooking(Long bookingId, Booking.Status resolvedStatus) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
         booking.setStatus(resolvedStatus);
         return new BookingResponse(bookingRepository.save(booking));
     }
 
-    public com.neighborhood.services.dto.PaymentResponse refundPayment(Long bookingId) {
-        com.neighborhood.services.entity.Payment payment = paymentRepository.findByBookingId(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("No payment record found for this booking"));
+    public PaymentResponse refundPayment(Long bookingId) {
+        Payment payment = paymentRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("No payment record found for this booking"));
 
-        payment.setStatus(com.neighborhood.services.entity.Payment.Status.REFUNDED);
-        return new com.neighborhood.services.dto.PaymentResponse(paymentRepository.save(payment));
+        payment.setStatus(Payment.Status.REFUNDED);
+        return new PaymentResponse(paymentRepository.save(payment));
     }
 }

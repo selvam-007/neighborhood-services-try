@@ -10,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -23,28 +22,20 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createBooking(
+    public ResponseEntity<BookingResponse> createBooking(
             Authentication authentication,
             @Valid @RequestBody BookingRequest request
     ) {
-        try {
-            return ResponseEntity.ok(bookingService.createBooking(authentication.getName(), request));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(bookingService.createBooking(authentication.getName(), request));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<?> updateStatus(
+    public ResponseEntity<BookingResponse> updateStatus(
             Authentication authentication,
             @PathVariable Long id,
             @Valid @RequestBody BookingStatusUpdateRequest request
     ) {
-        try {
-            return ResponseEntity.ok(bookingService.updateStatus(authentication.getName(), id, request.getStatus()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(bookingService.updateStatus(authentication.getName(), id, request.getStatus()));
     }
 
     @GetMapping("/as-requester")
@@ -53,11 +44,7 @@ public class BookingController {
     }
 
     @GetMapping("/as-provider")
-    public ResponseEntity<?> getMyBookingsAsProvider(Authentication authentication) {
-        try {
-            return ResponseEntity.ok(bookingService.getMyBookingsAsProvider(authentication.getName()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<List<BookingResponse>> getMyBookingsAsProvider(Authentication authentication) {
+        return ResponseEntity.ok(bookingService.getMyBookingsAsProvider(authentication.getName()));
     }
 }

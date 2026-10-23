@@ -3,12 +3,14 @@ package com.neighborhood.services.dto;
 import com.neighborhood.services.entity.ProviderProfile;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 import java.util.Set;
 
 public class ProviderProfileRequest {
 
     @NotBlank(message = "Bio is required")
+    @Size(max = 1000, message = "Bio must not exceed 1000 characters")
     private String bio;
 
     @NotEmpty(message = "At least one service must be selected")
@@ -16,7 +18,11 @@ public class ProviderProfileRequest {
 
     private Double latitude;
     private Double longitude;
+
+    @Size(max = 255, message = "Address must not exceed 255 characters")
     private String address;
+
+    @Size(max = 255, message = "Availability must not exceed 255 characters")
     private String availability;
 
     public String getBio() { return bio; }

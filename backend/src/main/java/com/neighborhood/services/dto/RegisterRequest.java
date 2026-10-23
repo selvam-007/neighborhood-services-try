@@ -8,15 +8,18 @@ public class RegisterRequest {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email must be valid")
+    @Size(max = 255, message = "Email must not exceed 255 characters")
     private String email;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
+    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
     private String password;
 
     @NotBlank(message = "Full name is required")
+    @Size(max = 255, message = "Full name must not exceed 255 characters")
     private String fullName;
 
+    @Size(max = 50, message = "Phone number must not exceed 50 characters")
     private String phoneNumber;
 
     // --- Getters and setters ---

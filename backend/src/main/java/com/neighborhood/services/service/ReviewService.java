@@ -6,6 +6,10 @@ import com.neighborhood.services.entity.Booking;
 import com.neighborhood.services.entity.ProviderProfile;
 import com.neighborhood.services.entity.Review;
 import com.neighborhood.services.entity.User;
+import com.neighborhood.services.exception.BadRequestException;
+import com.neighborhood.services.exception.ConflictException;
+import com.neighborhood.services.exception.ForbiddenException;
+import com.neighborhood.services.exception.ResourceNotFoundException;
 import com.neighborhood.services.repository.BookingRepository;
 import com.neighborhood.services.repository.ProviderProfileRepository;
 import com.neighborhood.services.repository.ReviewRepository;
@@ -37,25 +41,25 @@ public class ReviewService {
 
     public ReviewResponse createReview(String reviewerEmail, ReviewRequest request) {
         User reviewer = userRepository.findByEmail(reviewerEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Booking booking = bookingRepository.findById(request.getBookingId())
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
         if (!booking.getRequester().getId().equals(reviewer.getId())) {
-            throw new IllegalArgumentException("Only the requester can review this booking");
+            throw new ForbiddenException("Only the requester can review this booking");
         }
 
         if (request.getRating() < 1 || request.getRating() > 5) {
-            throw new IllegalArgumentException("Rating must be between 1 and 5");
+            throw new BadRequestException("Rating must be between 1 and 5");
         }
 
         if (booking.getStatus() != Booking.Status.COMPLETED) {
-            throw new IllegalArgumentException("You can only review a completed booking");
+            throw new BadRequestException("You can only review a completed booking");
         }
 
         if (reviewRepository.existsByBookingId(booking.getId())) {
-            throw new IllegalArgumentException("This booking has already been reviewed");
+            throw new ConflictException("This booking has already been reviewed");
         }
 
         Review review = new Review();

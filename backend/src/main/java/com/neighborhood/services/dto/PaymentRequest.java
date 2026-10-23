@@ -3,6 +3,7 @@ package com.neighborhood.services.dto;
 import com.neighborhood.services.entity.Payment;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
@@ -18,6 +19,7 @@ public class PaymentRequest {
     @NotNull(message = "Payment method is required")
     private Payment.Method method;
 
+    @Size(max = 255, message = "Transaction reference must not exceed 255 characters")
     private String transactionReference;
 
     public Long getBookingId() { return bookingId; }

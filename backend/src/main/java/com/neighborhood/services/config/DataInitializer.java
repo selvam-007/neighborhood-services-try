@@ -4,6 +4,7 @@ import com.neighborhood.services.entity.ProviderProfile;
 import com.neighborhood.services.entity.User;
 import com.neighborhood.services.repository.ProviderProfileRepository;
 import com.neighborhood.services.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,9 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final ProviderProfileRepository providerProfileRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.seed-demo-data:true}")
+    private boolean seedDemoData;
 
     public DataInitializer(
             UserRepository userRepository,
@@ -41,8 +45,8 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println(">>> Initialized default Admin user: admin@neighborlink.com / admin123");
         }
 
-        // 2. Seed initial sample providers if empty
-        if (providerProfileRepository.count() == 0) {
+        // 2. Seed initial sample providers if empty and demo seeding is enabled
+        if (seedDemoData && providerProfileRepository.count() == 0) {
             seedProvider(
                     "ramesh.plumber@example.com",
                     "Ramesh Kumar",
@@ -54,8 +58,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Anna Nagar, 2nd Main Road",
                     "Mon-Sat 8:00 AM - 7:00 PM",
                     true,
-                    4.9,
-                    18
+                    0.0,
+                    0
             );
 
             seedProvider(
@@ -69,8 +73,8 @@ public class DataInitializer implements CommandLineRunner {
                     "T. Nagar, Near Panagal Park",
                     "Weekdays 4:00 PM - 8:00 PM",
                     true,
-                    5.0,
-                    24
+                    0.0,
+                    0
             );
 
             seedProvider(
@@ -84,8 +88,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Velachery Main Road",
                     "All Days 9:00 AM - 8:00 PM",
                     true,
-                    4.8,
-                    15
+                    0.0,
+                    0
             );
 
             seedProvider(
@@ -99,11 +103,11 @@ public class DataInitializer implements CommandLineRunner {
                     "Kilpauk Garden Colony",
                     "Mon-Fri 7:00 AM - 4:00 PM",
                     true,
-                    4.9,
-                    29
+                    0.0,
+                    0
             );
 
-            System.out.println(">>> Initialized 4 verified neighborhood service providers.");
+            System.out.println(">>> Initialized 4 verified neighborhood service providers with reset ratings.");
         }
     }
 

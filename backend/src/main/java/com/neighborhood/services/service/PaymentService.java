@@ -5,6 +5,10 @@ import com.neighborhood.services.dto.PaymentResponse;
 import com.neighborhood.services.entity.Booking;
 import com.neighborhood.services.entity.Payment;
 import com.neighborhood.services.entity.User;
+import com.neighborhood.services.exception.BadRequestException;
+import com.neighborhood.services.exception.ConflictException;
+import com.neighborhood.services.exception.ForbiddenException;
+import com.neighborhood.services.exception.ResourceNotFoundException;
 import com.neighborhood.services.repository.BookingRepository;
 import com.neighborhood.services.repository.PaymentRepository;
 import com.neighborhood.services.repository.UserRepository;
@@ -29,21 +33,21 @@ public class PaymentService {
 
     public PaymentResponse recordPayment(String requesterEmail, PaymentRequest request) {
         User requester = userRepository.findByEmail(requesterEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Booking booking = bookingRepository.findById(request.getBookingId())
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
         if (!booking.getRequester().getId().equals(requester.getId())) {
-            throw new IllegalArgumentException("Only the requester can record payment for this booking");
+            throw new ForbiddenException("Only the requester can record payment for this booking");
         }
 
         if (booking.getStatus() != Booking.Status.COMPLETED) {
-            throw new IllegalArgumentException("Payment can only be recorded for a completed booking");
+            throw new BadRequestException("Payment can only be recorded for a completed booking");
         }
 
         if (paymentRepository.existsByBookingId(booking.getId())) {
-            throw new IllegalArgumentException("A payment record already exists for this booking");
+            throw new ConflictException("A payment record already exists for this booking");
         }
 
         Payment payment = new Payment();
@@ -58,17 +62,17 @@ public class PaymentService {
 
     public PaymentResponse confirmPayment(String providerEmail, Long bookingId) {
         User provider = userRepository.findByEmail(providerEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Payment payment = paymentRepository.findByBookingId(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("No payment record found for this booking"));
+                .orElseThrow(() -> new ResourceNotFoundException("No payment record found for this booking"));
 
         if (!payment.getBooking().getProvider().getUser().getId().equals(provider.getId())) {
-            throw new IllegalArgumentException("Only the provider can confirm this payment");
+            throw new ForbiddenException("Only the provider can confirm this payment");
         }
 
         if (payment.getStatus() != Payment.Status.PENDING) {
-            throw new IllegalArgumentException("Only a pending payment can be confirmed");
+            throw new BadRequestException("Only a pending payment can be confirmed");
         }
 
         payment.setStatus(Payment.Status.PAID);
@@ -77,16 +81,16 @@ public class PaymentService {
 
     public PaymentResponse getPaymentForBooking(String userEmail, Long bookingId) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Payment payment = paymentRepository.findByBookingId(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("No payment record found for this booking"));
+                .orElseThrow(() -> new ResourceNotFoundException("No payment record found for this booking"));
 
         boolean isRequester = payment.getBooking().getRequester().getId().equals(user.getId());
         boolean isProvider = payment.getBooking().getProvider().getUser().getId().equals(user.getId());
 
         if (!isRequester && !isProvider) {
-            throw new IllegalArgumentException("You are not part of this booking");
+            throw new ForbiddenException("You are not part of this booking");
         }
 
         return new PaymentResponse(payment);

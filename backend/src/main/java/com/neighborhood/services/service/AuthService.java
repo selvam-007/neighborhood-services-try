@@ -4,6 +4,8 @@ import com.neighborhood.services.dto.AuthResponse;
 import com.neighborhood.services.dto.LoginRequest;
 import com.neighborhood.services.dto.RegisterRequest;
 import com.neighborhood.services.entity.User;
+import com.neighborhood.services.exception.ConflictException;
+import com.neighborhood.services.exception.ResourceNotFoundException;
 import com.neighborhood.services.repository.UserRepository;
 import com.neighborhood.services.security.CustomUserDetailsService;
 import com.neighborhood.services.security.JwtService;
@@ -41,7 +43,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already in use");
+            throw new ConflictException("Email already in use");
         }
 
         User user = new User();
@@ -71,7 +73,7 @@ public class AuthService {
         );
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(userDetails);

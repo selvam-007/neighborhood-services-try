@@ -4,6 +4,9 @@ import com.neighborhood.services.dto.ChatMessageResponse;
 import com.neighborhood.services.entity.Booking;
 import com.neighborhood.services.entity.ChatMessage;
 import com.neighborhood.services.entity.User;
+import com.neighborhood.services.exception.BadRequestException;
+import com.neighborhood.services.exception.ForbiddenException;
+import com.neighborhood.services.exception.ResourceNotFoundException;
 import com.neighborhood.services.repository.BookingRepository;
 import com.neighborhood.services.repository.ChatMessageRepository;
 import com.neighborhood.services.repository.UserRepository;
@@ -33,22 +36,22 @@ public class ChatMessageService {
         boolean isRequester = booking.getRequester().getId().equals(user.getId());
         boolean isProvider = booking.getProvider().getUser().getId().equals(user.getId());
         if (!isRequester && !isProvider) {
-            throw new IllegalArgumentException("You are not part of this booking's conversation");
+            throw new ForbiddenException("You are not part of this booking's conversation");
         }
     }
 
     public ChatMessageResponse sendMessage(String senderEmail, Long bookingId, String content) {
         User sender = userRepository.findByEmail(senderEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
         verifyParticipant(booking, sender);
 
         if (booking.getStatus() == Booking.Status.CANCELLED ||
                 booking.getStatus() == Booking.Status.REJECTED) {
-            throw new IllegalArgumentException("Cannot send messages on a cancelled or rejected booking");
+            throw new BadRequestException("Cannot send messages on a cancelled or rejected booking");
         }
 
         ChatMessage message = new ChatMessage();
@@ -61,10 +64,10 @@ public class ChatMessageService {
 
     public List<ChatMessageResponse> getMessages(String userEmail, Long bookingId) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
         verifyParticipant(booking, user);
 

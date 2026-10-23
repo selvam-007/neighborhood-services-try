@@ -4,6 +4,8 @@ import com.neighborhood.services.dto.ProviderProfileRequest;
 import com.neighborhood.services.dto.ProviderProfileResponse;
 import com.neighborhood.services.entity.ProviderProfile;
 import com.neighborhood.services.entity.User;
+import com.neighborhood.services.exception.BadRequestException;
+import com.neighborhood.services.exception.ResourceNotFoundException;
 import com.neighborhood.services.repository.ProviderProfileRepository;
 import com.neighborhood.services.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -24,7 +26,7 @@ public class ProviderProfileService {
 
     public ProviderProfileResponse createOrUpdateProfile(String userEmail, ProviderProfileRequest request) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         ProviderProfile profile = providerProfileRepository.findByUserId(user.getId())
                 .orElseGet(ProviderProfile::new);
@@ -49,10 +51,10 @@ public class ProviderProfileService {
 
     public ProviderProfileResponse updateProfileImage(String userEmail, String imageUrl) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         ProviderProfile profile = providerProfileRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Create a profile before uploading an image"));
+                .orElseThrow(() -> new BadRequestException("Create a profile before uploading an image"));
 
         profile.setProfileImageUrl(imageUrl);
         return new ProviderProfileResponse(providerProfileRepository.save(profile));
@@ -60,17 +62,17 @@ public class ProviderProfileService {
 
     public ProviderProfileResponse getMyProfile(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         ProviderProfile profile = providerProfileRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("No provider profile found"));
+                .orElseThrow(() -> new ResourceNotFoundException("No provider profile found"));
 
         return new ProviderProfileResponse(profile);
     }
 
     public ProviderProfileResponse getProfileById(Long id) {
         ProviderProfile profile = providerProfileRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Provider profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found"));
 
         return new ProviderProfileResponse(profile);
     }

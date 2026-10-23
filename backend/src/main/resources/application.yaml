@@ -37,6 +37,7 @@ cloudinary:
   api-secret: ${CLOUDINARY_API_SECRET:secret}
 
 app:
+  seed-demo-data: ${SEED_DEMO_DATA:true}
   cors:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173}
 

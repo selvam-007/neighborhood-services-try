@@ -3,6 +3,7 @@ package com.neighborhood.services.dto;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public class ReviewRequest {
 
@@ -14,6 +15,7 @@ public class ReviewRequest {
     @Max(value = 5, message = "Rating must be between 1 and 5")
     private Integer rating;
 
+    @Size(max = 1000, message = "Comment must not exceed 1000 characters")
     private String comment;
 
     public Long getBookingId() { return bookingId; }
