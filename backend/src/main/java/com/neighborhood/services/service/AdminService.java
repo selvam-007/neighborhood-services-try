@@ -74,6 +74,12 @@ public class AdminService {
 
     public List<AdminUserResponse> getAllUsers() {
         return userRepository.findAll().stream()
+                .sorted((a, b) -> {
+                    if (a.getCreatedAt() == null || b.getCreatedAt() == null) {
+                        return Long.compare(b.getId() != null ? b.getId() : 0, a.getId() != null ? a.getId() : 0);
+                    }
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
                 .map(AdminUserResponse::new)
                 .collect(Collectors.toList());
     }

@@ -48,17 +48,21 @@ function StatCard({ label, value, icon: Icon, color = 'indigo' }) {
 }
 
 function AdminDashboard() {
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState('users');
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [error, setError] = useState('');
   const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState('ALL');
   const [bookingSearch, setBookingSearch] = useState('');
 
-  const loadAll = () => {
-    setLoading(true);
+  const loadAll = (isManual = false) => {
+    if (isManual) setRefreshing(true);
+    else setLoading(true);
     setError('');
     Promise.all([
       api.get('/admin/stats'),
@@ -67,11 +71,22 @@ function AdminDashboard() {
     ])
       .then(([statsRes, usersRes, bookingsRes]) => {
         setStats(statsRes.data);
-        setUsers(usersRes.data || []);
+        // Sort users descending by createdAt or ID so latest registered is first
+        const sortedUsers = (usersRes.data || []).sort((a, b) => {
+          if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          }
+          return (b.id || 0) - (a.id || 0);
+        });
+        setUsers(sortedUsers);
         setBookings(bookingsRes.data || []);
+        setLastRefreshed(new Date());
       })
       .catch(() => setError('Failed to load admin telemetry. Ensure your user account has ROLE_ADMIN.'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
   };
 
   useEffect(() => {
@@ -82,18 +97,25 @@ function AdminDashboard() {
     if (!window.confirm(`Force resolve booking #${bookingId} to status "${status}"?`)) return;
     try {
       await api.patch(`/admin/bookings/${bookingId}/resolve?status=${status}`);
-      loadAll();
+      loadAll(true);
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to resolve booking');
     }
   };
 
-  const filteredUsers = users.filter(
-    (u) =>
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch =
       u.fullName?.toLowerCase().includes(userSearch.toLowerCase()) ||
       u.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.phoneNumber?.includes(userSearch)
-  );
+      u.phoneNumber?.includes(userSearch) ||
+      u.id?.toString().includes(userSearch);
+
+    const matchesRole =
+      userRoleFilter === 'ALL' ||
+      u.roles?.some((r) => r.includes(userRoleFilter));
+
+    return matchesSearch && matchesRole;
+  });
 
   const filteredBookings = bookings.filter(
     (b) =>
@@ -150,19 +172,26 @@ function AdminDashboard() {
             </p>
           </div>
 
-          <button
-            onClick={loadAll}
-            className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 transition shadow-xs"
-            title="Refresh metrics"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline-block text-[11px] text-slate-400 font-medium">
+              Updated: {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+            <button
+              onClick={() => loadAll(true)}
+              disabled={refreshing}
+              className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition shadow-xs flex items-center gap-1.5 text-xs font-semibold"
+              title="Refresh telemetry and users registry"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-indigo-600' : ''}`} />
+              <span className="hidden sm:inline">Sync Live</span>
+            </button>
+          </div>
         </div>
 
         {/* Telemetry Stat Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Total Users" value={stats.totalUsers} icon={Users} color="indigo" />
+            <StatCard label="Total Registered Users" value={stats.totalUsers} icon={Users} color="indigo" />
             <StatCard label="Total Providers" value={stats.totalProviders} icon={Briefcase} color="purple" />
             <StatCard label="Verified Pros" value={stats.verifiedProviders} icon={ShieldCheck} color="emerald" />
             <StatCard label="Total Bookings" value={stats.totalBookings} icon={CalendarCheck} color="indigo" />
@@ -183,7 +212,7 @@ function AdminDashboard() {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Users Registry ({users.length})</span>
+            <span>Community Users Registry ({users.length})</span>
           </button>
 
           <button
@@ -202,64 +231,141 @@ function AdminDashboard() {
         {/* Users Tab */}
         {tab === 'users' && (
           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <h3 className="text-base font-bold text-slate-900">
-                Registered Community Members ({filteredUsers.length})
-              </h3>
-
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  placeholder="Filter users..."
-                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <span>Registered Community Members</span>
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold">
+                    {filteredUsers.length} of {users.length}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Real-time directory of all registered customers, verified providers, and administrative staff
+                </p>
               </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Search by name, email, phone..."
+                    className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Role Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              {[
+                { id: 'ALL', label: 'All Accounts' },
+                { id: 'USER', label: 'Customers / Neighbors' },
+                { id: 'PROVIDER', label: 'Service Providers' },
+                { id: 'ADMIN', label: 'Administrators' },
+              ].map((filter) => (
+                <button
+                  key={filter.id}
+                  onClick={() => setUserRoleFilter(filter.id)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                    userRoleFilter === filter.id
+                      ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-transparent'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-slate-100">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
                   <tr>
-                    <th className="p-3.5">Name</th>
+                    <th className="p-3.5">ID</th>
+                    <th className="p-3.5">User Details</th>
                     <th className="p-3.5">Email Address</th>
-                    <th className="p-3.5">Phone</th>
+                    <th className="p-3.5">Phone Number</th>
                     <th className="p-3.5">Assigned Roles</th>
+                    <th className="p-3.5">Registered On</th>
+                    <th className="p-3.5">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/70 transition">
-                      <td className="p-3.5 font-bold text-slate-900 flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-[11px]">
-                          {u.fullName?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                        <span>{u.fullName}</span>
-                      </td>
-                      <td className="p-3.5 text-slate-500">{u.email}</td>
-                      <td className="p-3.5 text-slate-500">{u.phoneNumber || '—'}</td>
-                      <td className="p-3.5">
-                        <div className="flex gap-1 flex-wrap">
-                          {u.roles?.map((r) => (
-                            <span
-                              key={r}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                r.includes('ADMIN')
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : r.includes('PROVIDER')
-                                  ? 'bg-purple-100 text-purple-800'
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}
-                            >
-                              {r.replace('ROLE_', '')}
-                            </span>
-                          ))}
-                        </div>
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-400">
+                        No registered users found matching &quot;{userSearch}&quot;
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredUsers.map((u, idx) => {
+                      const isRecent = idx < 2 || (u.createdAt && (new Date() - new Date(u.createdAt)) < 86400000);
+                      const formattedDate = u.createdAt
+                        ? new Date(u.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'Pre-existing';
+
+                      return (
+                        <tr key={u.id || idx} className="hover:bg-slate-50/70 transition">
+                          <td className="p-3.5 font-mono text-[11px] text-slate-400">#{u.id}</td>
+                          <td className="p-3.5 font-bold text-slate-900">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-50 to-violet-50 text-indigo-600 border border-indigo-100/60 flex items-center justify-center font-bold text-xs shadow-2xs">
+                                {u.fullName?.charAt(0).toUpperCase() || 'U'}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-slate-900">{u.fullName}</span>
+                                  {isRecent && (
+                                    <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase tracking-wide">
+                                      NEW
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-slate-600 font-medium">{u.email}</td>
+                          <td className="p-3.5 text-slate-500">{u.phoneNumber || '—'}</td>
+                          <td className="p-3.5">
+                            <div className="flex gap-1 flex-wrap">
+                              {u.roles?.map((r) => (
+                                <span
+                                  key={r}
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                    r.includes('ADMIN')
+                                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                      : r.includes('PROVIDER')
+                                      ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                      : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                                  }`}
+                                >
+                                  {r.replace('ROLE_', '')}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-slate-500 whitespace-nowrap">
+                            {formattedDate}
+                          </td>
+                          <td className="p-3.5">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                              Active
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

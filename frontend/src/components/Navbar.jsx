@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  MapPin,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -23,6 +24,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'Browse Services', path: '/browse', icon: Search },
+    { name: 'Live Map', path: '/map', icon: MapPin },
     ...(user
       ? [
           { name: 'My Bookings', path: '/my-bookings', icon: CalendarCheck },

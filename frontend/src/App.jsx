@@ -71,6 +71,14 @@ function App() {
         }
       />
       <Route
+        path="/map"
+        element={
+          <Layout>
+            <Browse />
+          </Layout>
+        }
+      />
+      <Route
         path="/providers/:id"
         element={
           <Layout>

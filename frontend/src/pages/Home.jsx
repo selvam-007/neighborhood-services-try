@@ -161,8 +161,15 @@ function Home() {
               </button>
             </form>
 
-            {/* User status badges */}
+            {/* Quick Live Map Callout & User status badges */}
             <div className="flex flex-wrap items-center gap-3 mt-6 text-xs text-slate-300">
+              <Link
+                to="/map"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/30 hover:bg-indigo-500/50 text-indigo-200 text-xs font-bold border border-indigo-400/30 backdrop-blur-md transition shadow-xs"
+              >
+                <MapPin className="w-3.5 h-3.5 text-indigo-300 animate-pulse" />
+                <span>📍 Open Live Map & Nearest Providers</span>
+              </Link>
               <span className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
                 Logged in as {user?.email}
@@ -178,9 +185,9 @@ function Home() {
       {/* Quick Action Navigation Cards */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {/* Card 1: Browse Providers */}
+          {/* Card 1: Live Interactive Map */}
           <Link
-            to="/browse"
+            to="/map"
             className="group bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
           >
             <div>
@@ -188,14 +195,14 @@ function Home() {
                 <MapPin className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">
-                Explore Services & Map
+                Live Interactive Map
               </h3>
               <p className="text-sm text-slate-500 leading-relaxed">
-                Locate verified pros nearby, view service areas on interactive map, and check real customer reviews.
+                Detect your live GPS position, see nearest specialists ranked by distance, and get real-time driving estimates.
               </p>
             </div>
             <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 mt-4 group-hover:translate-x-1 transition-transform">
-              <span>Browse directory</span>
+              <span>Launch Live Map</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
